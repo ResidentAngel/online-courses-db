@@ -2,136 +2,264 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Онлайн-курсы — Панель управления БД</title>
+    <title>Онлайн-курсы — АИС (PostgreSQL + Go)</title>
     <style>
-        body { font-family: system-ui, sans-serif; margin: 20px; background: #f4f6f9; color: #333; }
-        h1, h2, h3 { color: #1e293b; }
-        .alert-msg { background: #d1fae5; color: #065f46; padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid #34d399; }
-        .alert-err { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid #f87171; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 25px; }
-        .card { background: #fff; padding: 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; background: #fff; }
-        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
-        th { background: #e2e8f0; }
-        input, select, textarea, button { width: 100%; padding: 8px; margin-top: 6px; margin-bottom: 12px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 4px; }
-        button { background: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 24px; background: #f1f5f9; color: #1e293b; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 12px; }
+        .badge { background: #1e40af; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 13px; }
+        .alert-msg { background: #dcfce7; color: #166534; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; border-left: 5px solid #22c55e; font-weight: 500; }
+        .alert-err { background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; border-left: 5px solid #ef4444; font-weight: 500; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; background: #e2e8f0; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; color: #334155; width: auto; }
+        .tab-btn.active { background: #2563eb; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .card { background: #ffffff; padding: 18px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+        h2, h3 { margin-top: 0; color: #0f172a; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13.5px; background: #fff; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+        th { background: #f8fafc; color: #334155; font-weight: 600; }
+        input, select, textarea, button { width: 100%; padding: 8px 10px; margin-top: 5px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+        button { background: #2563eb; color: white; border: none; font-weight: 600; cursor: pointer; }
         button:hover { background: #1d4ed8; }
-        .btn-secondary { background: #475569; }
+        .btn-sec { background: #475569; }
+        .btn-sec:hover { background: #334155; }
     </style>
+    <script>
+        function showTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+    </script>
 </head>
 <body>
-<h1>Образовательная платформа (СУБД PostgreSQL + Go)</h1>
+<div class="header">
+    <div>
+        <h1 style="margin:0;">Образовательная платформа «Онлайн-Курсы»</h1>
+        <small>Составители: Полшков С.А., Низамов Г.З., Силантьев И.В. | СУБД: PostgreSQL (16 таблиц)</small>
+    </div>
+    <span class="badge">Демонстрация ролей и бизнес-правил</span>
+</div>
 
-{{if .Message}}<div class="alert-msg">✅ {{.Message}}</div>{{end}}
-{{if .Error}}<div class="alert-err">❌ {{.Error}}</div>{{end}}
+{{if .Message}}<div class="alert-msg">✔ {{.Message}}</div>{{end}}
+{{if .Error}}<div class="alert-err">✖ {{.Error}}</div>{{end}}
 
-<div class="grid">
-    <!-- Форма 1: Регистрация пользователя -->
-    <div class="card">
-        <h3>1. Регистрация (users + userentry)</h3>
-        <form action="/register" method="POST">
-            <input type="text" name="login" placeholder="Логин" required>
-            <input type="email" name="email" placeholder="Email (уникальный)" required>
-            <input type="password" name="password" placeholder="Пароль (будет захэширован bcrypt)" required>
-            <select name="role">
-                <option value="student">Студент (student)</option>
-                <option value="teacher">Преподаватель (teacher)</option>
-                <option value="company">Представитель компании (company)</option>
-                <option value="admin">Администратор (admin)</option>
-            </select>
-            <button type="submit">Зарегистрировать</button>
-        </form>
+<!-- Навигация по 4 ролям из пункта 3 ТЗ -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="showTab('tab-student', this)">👨‍🎓 3.1. Студент</button>
+    <button class="tab-btn" onclick="showTab('tab-teacher', this)">👨‍🏫 3.2. Преподаватель</button>
+    <button class="tab-btn" onclick="showTab('tab-company', this)">🏢 3.3. Представитель компании</button>
+    <button class="tab-btn" onclick="showTab('tab-admin', this)">🛠 3.4. Администратор</button>
+</div>
+
+<!-- Вкладка 1: СТУДЕНТ -->
+<div id="tab-student" class="tab-content active">
+    <div class="grid">
+        <div class="card">
+            <h3>Решение задачи (coderun &rarr; codesubmit)</h3>
+            <form method="POST">
+                <label>ID Студента / ID Задачи / ID Языка:</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" name="user_id" value="1" required title="ID Пользователя">
+                    <input type="number" name="problem_id" value="1" required title="ID Задачи">
+                    <input type="number" name="language_id" value="1" required title="ID Языка">
+                </div>
+                <textarea name="source_code" rows="3" required>package main&#10;func solve() {}</textarea>
+                <button type="submit" formaction="/code/run" class="btn-sec">1. Отладка и пробный запуск (coderun)</button>
+                <button type="submit" formaction="/code/submit">2. Отправить решение на проверку (codesubmit)</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Прохождение теста (teststart &rarr; testresult)</h3>
+            <form method="POST">
+                <input type="number" name="user_id" placeholder="ID Пользователя (например, 1)" value="1" required>
+                <input type="number" name="test_id" placeholder="ID Теста (1 - Базовый тест SQL)" value="1" required>
+                <input type="number" name="score" placeholder="Набранный балл (0-100)" value="95" required>
+                <button type="submit" formaction="/test/start" class="btn-sec">Шаг 1: Начать попытку (teststart)</button>
+                <button type="submit" formaction="/test/finish">Шаг 2: Завершить и получить балл (testresult)</button>
+            </form>
+        </div>
     </div>
 
-    <!-- Форма 2: Отправка и запуск кода -->
-    <div class="card">
-        <h3>2. Решение задачи (coderun / codesubmit)</h3>
-        <form method="POST">
-            <input type="number" name="user_id" placeholder="ID Пользователя (например, 1)" value="1" required>
-            <input type="number" name="problem_id" placeholder="ID Задачи (например, 1)" value="1" required>
-            <input type="number" name="language_id" placeholder="ID Языка (проверка languagetoproblem)" value="1" required>
-            <textarea name="source_code" rows="3" placeholder="package main..." required>func solve() {}</textarea>
-            <button type="submit" formaction="/code/run" class="btn-secondary">Пробный запуск (coderun)</button>
-            <button type="submit" formaction="/code/submit">Отправить на проверку (codesubmit)</button>
-        </form>
+    <div class="card" style="margin-bottom:20px;">
+        <h3>Теоретические материалы курса (таблица page)</h3>
+        <table>
+            <tr><th>ID</th><th>Тема</th><th>Содержание</th><th>Дата публикации</th></tr>
+            {{range .Pages}}<tr><td>{{.ID}}</td><td><b>{{.Title}}</b></td><td>{{.Content}}</td><td>{{.CreatedAt}}</td></tr>{{end}}
+        </table>
     </div>
 
-    <!-- Форма 3: Тестирование -->
-    <div class="card">
-        <h3>3. Прохождение теста (teststart -> testresult)</h3>
-        <form method="POST">
-            <input type="number" name="user_id" placeholder="ID Пользователя" value="1" required>
-            <input type="number" name="test_id" placeholder="ID Теста (1 - Базовый тест SQL)" value="1" required>
-            <input type="number" name="score" placeholder="Итоговый балл (0-100)" value="95">
-            <button type="submit" formaction="/test/start" class="btn-secondary">Шаг 1: Начать тест (teststart)</button>
-            <button type="submit" formaction="/test/finish">Шаг 2: Завершить тест (testresult)</button>
-        </form>
+    <div class="card" style="margin-bottom:20px;">
+        <h3>Каталог практических задач и подсказок (problem + languagetoproblem + company + tips)</h3>
+        <table>
+            <tr><th>ID</th><th>Задача</th><th>Сложность</th><th>Лимиты</th><th>Разрешенные языки (M:N)</th><th>Компании (M:N)</th><th>Подсказки (tips)</th></tr>
+            {{range .Problems}}
+            <tr><td>{{.ID}}</td><td><b>{{.Title}}</b></td><td>{{.Difficulty}}</td><td>{{.TimeLimit}} мс / {{.MemoryLimit}} МБ</td><td>{{.AllowedLangs}}</td><td>{{.Companies}}</td><td>{{.Hints}}</td></tr>
+            {{end}}
+        </table>
     </div>
 
-    <!-- Форма 4: Биллинг -->
-    <div class="card">
-        <h3>4. Биллинг (transaction)</h3>
-        <form action="/transaction/create" method="POST">
-            <input type="number" name="user_id" placeholder="ID Пользователя" value="1" required>
-            <input type="number" name="type_id" placeholder="ID Типа операции (1-Пополнение, 2-PRO)" value="1" required>
-            <input type="number" step="0.01" name="amount" placeholder="Сумма (руб.)" value="500.00" required>
-            <button type="submit">Провести транзакцию</button>
-        </form>
+    <div class="grid">
+        <div class="card">
+            <h3>Пробные запуски (coderun)</h3>
+            <table>
+                <tr><th>ID</th><th>Студент</th><th>Задача</th><th>Язык</th><th>Вывод</th><th>мс</th></tr>
+                {{range .CodeRuns}}<tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.ProblemTitle}}</td><td>{{.LangName}}</td><td>{{.Output}}</td><td>{{.ExecTime}}</td></tr>{{end}}
+            </table>
+        </div>
+        <div class="card">
+            <h3>Финальные отправки (codesubmit)</h3>
+            <table>
+                <tr><th>ID</th><th>Студент</th><th>Задача</th><th>Язык</th><th>Статус</th><th>мс</th></tr>
+                {{range .Submissions}}<tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.ProblemTitle}}</td><td>{{.LangName}}</td><td><b>{{.Status}}</b></td><td>{{.ExecTime}}</td></tr>{{end}}
+            </table>
+        </div>
     </div>
 </div>
 
-<h2>Каталог задач (problem + languagetoproblem + company + tips)</h2>
-<table>
-    <tr><th>ID</th><th>Название</th><th>Сложность</th><th>Лимиты</th><th>Разрешенные языки (M:N)</th><th>Компании (M:N)</th><th>Подсказки (1:N)</th></tr>
-    {{range .Problems}}
-    <tr>
-        <td>{{.ID}}</td><td><b>{{.Title}}</b></td><td>{{.Difficulty}}</td>
-        <td>{{.TimeLimit}} мс / {{.MemoryLimit}} МБ</td><td>{{.AllowedLangs}}</td><td>{{.Companies}}</td><td>{{.Hints}}</td>
-    </tr>
-    {{end}}
-</table>
+<!-- Вкладка 2: ПРЕПОДАВАТЕЛЬ -->
+<div id="tab-teacher" class="tab-content">
+    <div class="grid">
+        <div class="card">
+            <h3>Добавить задачу + язык + компанию + подсказку</h3>
+            <form action="/problem/create" method="POST">
+                <input type="text" name="title" placeholder="Название задачи" required>
+                <textarea name="description" rows="2" placeholder="Условие задачи" required></textarea>
+                <select name="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" name="time_limit" placeholder="Лимит мс (<=5000)" value="1000" required>
+                    <input type="number" name="memory_limit" placeholder="Память МБ" value="64" required>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" name="language_id" placeholder="ID Языка (1-Go, 2-Py)" value="1" required>
+                    <input type="number" name="company_id" placeholder="ID Компании (1-Яндекс, 2-Т-Банк)" value="1">
+                </div>
+                <input type="text" name="hint" placeholder="Текст подсказки (в таблицу tips)">
+                <button type="submit">Создать задачу</button>
+            </form>
+        </div>
 
-<div class="grid" style="margin-top:20px;">
-    <div>
-        <h3>Отправки кода (codesubmit)</h3>
-        <table>
-            <tr><th>ID</th><th>Студент</th><th>Задача</th><th>Язык</th><th>Статус</th><th>Время (мс)</th></tr>
-            {{range .Submissions}}
-            <tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.ProblemTitle}}</td><td>{{.LangName}}</td><td><b>{{.Status}}</b></td><td>{{.ExecTime}}</td></tr>
-            {{end}}
-        </table>
+        <div class="card">
+            <h3>Добавить страницу теории (page)</h3>
+            <form action="/page/create" method="POST">
+                <input type="text" name="title" placeholder="Заголовок лекции" required>
+                <textarea name="content" rows="3" placeholder="Текст теоретического материала..." required></textarea>
+                <button type="submit">Опубликовать лекцию</button>
+            </form>
+
+            <h3 style="margin-top:16px;">Добавить вопрос в тест (testquestion + testanswer)</h3>
+            <form action="/question/create" method="POST">
+                <input type="number" name="test_id" value="1" placeholder="ID Теста (1)" required>
+                <input type="text" name="question" placeholder="Текст вопроса" required>
+                <input type="text" name="correct_answer" placeholder="Правильный ответ (is_correct=true)" required>
+                <input type="text" name="wrong_answer" placeholder="Неправильный ответ (is_correct=false)" required>
+                <button type="submit">Добавить вопрос с ответами</button>
+            </form>
+        </div>
     </div>
 
-    <div>
-        <h3>Результаты тестов (testresult)</h3>
+    <div class="card">
+        <h3>Банк вопросов и вариантов ответов (test + testquestion + testanswer)</h3>
         <table>
-            <tr><th>ID</th><th>Студент</th><th>Тест</th><th>Балл</th><th>Время (сек)</th></tr>
-            {{range .TestResults}}
-            <tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.TestTitle}}</td><td><b>{{.Score}}</b></td><td>{{.Duration}}</td></tr>
-            {{end}}
+            <tr><th>ID</th><th>Тест</th><th>Вопрос</th><th>Варианты ответов</th></tr>
+            {{range .Questions}}<tr><td>{{.ID}}</td><td>{{.TestTitle}}</td><td><b>{{.QuestionText}}</b></td><td>{{.Answers}}</td></tr>{{end}}
         </table>
     </div>
 </div>
 
-<div class="grid">
-    <div>
-        <h3>Пользователи (users)</h3>
+<!-- Вкладка 3: ПРЕДСТАВИТЕЛЬ КОМПАНИИ -->
+<div id="tab-company" class="tab-content">
+    <div class="card">
+        <h3>Статистика решения брендированных задач компаний-партнеров (company + problem_to_company + codesubmit)</h3>
         <table>
-            <tr><th>ID</th><th>Логин</th><th>Email</th><th>Роль</th></tr>
-            {{range .Users}}
-            <tr><td>{{.ID}}</td><td>{{.Login}}</td><td>{{.Email}}</td><td>{{.Role}}</td></tr>
+            <tr><th>Компания-партнер</th><th>Задача</th><th>Всего отправок (codesubmit)</th><th>Успешных решений (accepted)</th></tr>
+            {{range .CompanyStats}}
+            <tr><td><b>{{.CompanyName}}</b></td><td>{{.ProblemTitle}}</td><td>{{.TotalSubmits}}</td><td><b>{{.AcceptedSubmits}}</b></td></tr>
             {{end}}
         </table>
     </div>
 
-    <div>
-        <h3>Финансовые операции (transaction)</h3>
+    <div class="card" style="margin-top:20px;">
+        <h3>Результаты экзаменационных тестов студентов (testresult)</h3>
         <table>
-            <tr><th>ID</th><th>Пользователь</th><th>Тип операции</th><th>Сумма</th><th>Дата</th></tr>
-            {{range .Transactions}}
-            <tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.TypeName}}</td><td>{{.Amount}} ₽</td><td>{{.CreatedAt}}</td></tr>
-            {{end}}
+            <tr><th>ID</th><th>Студент</th><th>Тест</th><th>Итоговый балл</th><th>Длительность (сек)</th><th>Дата</th></tr>
+            {{range .TestResults}}<tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.TestTitle}}</td><td><b>{{.Score}}</b></td><td>{{.Duration}}</td><td>{{.CompletedAt}}</td></tr>{{end}}
         </table>
+    </div>
+</div>
+
+<!-- Вкладка 4: АДМИНИСТРАТОР -->
+<div id="tab-admin" class="tab-content">
+    <div class="grid">
+        <div class="card">
+            <h3>Регистрация пользователя (users + userentry)</h3>
+            <form action="/register" method="POST">
+                <input type="text" name="login" placeholder="Логин (уникальный)" required>
+                <input type="email" name="email" placeholder="Email (уникальный)" required>
+                <input type="password" name="password" placeholder="Пароль (bcrypt)" required>
+                <select name="role">
+                    <option value="student">Студент (student)</option>
+                    <option value="teacher">Преподаватель (teacher)</option>
+                    <option value="company">Представитель компании (company)</option>
+                    <option value="admin">Администратор (admin)</option>
+                </select>
+                <button type="submit">Создать учетную запись</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Справочник языков (language)</h3>
+            <form action="/language/create" method="POST">
+                <input type="text" name="name" placeholder="Название языка (например, Rust)" required>
+                <input type="text" name="version" placeholder="Версия компилятора (например, 1.78)" required>
+                <button type="submit">Добавить язык в систему</button>
+            </form>
+            <table>
+                <tr><th>ID</th><th>Язык</th><th>Компилятор</th></tr>
+                {{range .Languages}}<tr><td>{{.ID}}</td><td><b>{{.Name}}</b></td><td>{{.Version}}</td></tr>{{end}}
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Проведение платежа (transaction + transactiontype)</h3>
+            <form action="/transaction/create" method="POST">
+                <input type="number" name="user_id" placeholder="ID Пользователя" value="1" required>
+                <input type="number" name="type_id" placeholder="ID Типа (1-Пополнение, 2-PRO, 3-Подсказка)" value="1" required>
+                <input type="number" step="0.01" name="amount" placeholder="Сумма (₽)" value="1000.00" required>
+                <button type="submit">Зафиксировать транзакцию</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Учетные записи (users) и журнал входов (userentry)</h3>
+            <table>
+                <tr><th>ID</th><th>Логин</th><th>Email</th><th>Роль</th></tr>
+                {{range .Users}}<tr><td>{{.ID}}</td><td><b>{{.Login}}</b></td><td>{{.Email}}</td><td>{{.Role}}</td></tr>{{end}}
+            </table>
+            <h4 style="margin-top:14px; margin-bottom:6px;">Последние записи в userentry:</h4>
+            <table>
+                <tr><th>ID</th><th>Пользователь</th><th>Событие</th><th>Время</th></tr>
+                {{range .UserEntries}}<tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.Action}}</td><td>{{.EntryTime}}</td></tr>{{end}}
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Финансовый поток (transaction)</h3>
+            <table>
+                <tr><th>ID</th><th>Пользователь</th><th>Тип операции</th><th>Сумма</th><th>Дата</th></tr>
+                {{range .Transactions}}<tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.TypeName}}</td><td><b>{{.Amount}} ₽</b></td><td>{{.CreatedAt}}</td></tr>{{end}}
+            </table>
+        </div>
     </div>
 </div>
 </body>
