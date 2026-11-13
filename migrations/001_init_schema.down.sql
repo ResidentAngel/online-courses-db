@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS "transaction", transactiontype, testresult, teststart, testanswer, testquestion, test, codesubmit, coderun, problem_to_company, languagetoproblem, tips, problem, page, company, language, userentry, users CASCADE;

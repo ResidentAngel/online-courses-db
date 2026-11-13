@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: online_courses_pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: online_courses
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations/001_init_schema.up.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./migrations/002_seed_data.sql:/docker-entrypoint-initdb.d/02_seed.sql
+    restart: unless-stopped
+
+volumes:
+  pgdata:

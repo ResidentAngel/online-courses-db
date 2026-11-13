@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Онлайн-курсы — Панель управления БД</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 20px; background: #f4f6f9; color: #333; }
+        h1, h2, h3 { color: #1e293b; }
+        .alert-msg { background: #d1fae5; color: #065f46; padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid #34d399; }
+        .alert-err { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 16px; border: 1px solid #f87171; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .card { background: #fff; padding: 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; background: #fff; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        th { background: #e2e8f0; }
+        input, select, textarea, button { width: 100%; padding: 8px; margin-top: 6px; margin-bottom: 12px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 4px; }
+        button { background: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #1d4ed8; }
+        .btn-secondary { background: #475569; }
+    </style>
+</head>
+<body>
+<h1>Образовательная платформа (СУБД PostgreSQL + Go)</h1>
+
+{{if .Message}}<div class="alert-msg">✅ {{.Message}}</div>{{end}}
+{{if .Error}}<div class="alert-err">❌ {{.Error}}</div>{{end}}
+
+<div class="grid">
+    <!-- Форма 1: Регистрация пользователя -->
+    <div class="card">
+        <h3>1. Регистрация (users + userentry)</h3>
+        <form action="/register" method="POST">
+            <input type="text" name="login" placeholder="Логин" required>
+            <input type="email" name="email" placeholder="Email (уникальный)" required>
+            <input type="password" name="password" placeholder="Пароль (будет захэширован bcrypt)" required>
+            <select name="role">
+                <option value="student">Студент (student)</option>
+                <option value="teacher">Преподаватель (teacher)</option>
+                <option value="company">Представитель компании (company)</option>
+                <option value="admin">Администратор (admin)</option>
+            </select>
+            <button type="submit">Зарегистрировать</button>
+        </form>
+    </div>
+
+    <!-- Форма 2: Отправка и запуск кода -->
+    <div class="card">
+        <h3>2. Решение задачи (coderun / codesubmit)</h3>
+        <form method="POST">
+            <input type="number" name="user_id" placeholder="ID Пользователя (например, 1)" value="1" required>
+            <input type="number" name="problem_id" placeholder="ID Задачи (например, 1)" value="1" required>
+            <input type="number" name="language_id" placeholder="ID Языка (проверка languagetoproblem)" value="1" required>
+            <textarea name="source_code" rows="3" placeholder="package main..." required>func solve() {}</textarea>
+            <button type="submit" formaction="/code/run" class="btn-secondary">Пробный запуск (coderun)</button>
+            <button type="submit" formaction="/code/submit">Отправить на проверку (codesubmit)</button>
+        </form>
+    </div>
+
+    <!-- Форма 3: Тестирование -->
+    <div class="card">
+        <h3>3. Прохождение теста (teststart -> testresult)</h3>
+        <form method="POST">
+            <input type="number" name="user_id" placeholder="ID Пользователя" value="1" required>
+            <input type="number" name="test_id" placeholder="ID Теста (1 - Базовый тест SQL)" value="1" required>
+            <input type="number" name="score" placeholder="Итоговый балл (0-100)" value="95">
+            <button type="submit" formaction="/test/start" class="btn-secondary">Шаг 1: Начать тест (teststart)</button>
+            <button type="submit" formaction="/test/finish">Шаг 2: Завершить тест (testresult)</button>
+        </form>
+    </div>
+
+    <!-- Форма 4: Биллинг -->
+    <div class="card">
+        <h3>4. Биллинг (transaction)</h3>
+        <form action="/transaction/create" method="POST">
+            <input type="number" name="user_id" placeholder="ID Пользователя" value="1" required>
+            <input type="number" name="type_id" placeholder="ID Типа операции (1-Пополнение, 2-PRO)" value="1" required>
+            <input type="number" step="0.01" name="amount" placeholder="Сумма (руб.)" value="500.00" required>
+            <button type="submit">Провести транзакцию</button>
+        </form>
+    </div>
+</div>
+
+<h2>Каталог задач (problem + languagetoproblem + company + tips)</h2>
+<table>
+    <tr><th>ID</th><th>Название</th><th>Сложность</th><th>Лимиты</th><th>Разрешенные языки (M:N)</th><th>Компании (M:N)</th><th>Подсказки (1:N)</th></tr>
+    {{range .Problems}}
+    <tr>
+        <td>{{.ID}}</td><td><b>{{.Title}}</b></td><td>{{.Difficulty}}</td>
+        <td>{{.TimeLimit}} мс / {{.MemoryLimit}} МБ</td><td>{{.AllowedLangs}}</td><td>{{.Companies}}</td><td>{{.Hints}}</td>
+    </tr>
+    {{end}}
+</table>
+
+<div class="grid" style="margin-top:20px;">
+    <div>
+        <h3>Отправки кода (codesubmit)</h3>
+        <table>
+            <tr><th>ID</th><th>Студент</th><th>Задача</th><th>Язык</th><th>Статус</th><th>Время (мс)</th></tr>
+            {{range .Submissions}}
+            <tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.ProblemTitle}}</td><td>{{.LangName}}</td><td><b>{{.Status}}</b></td><td>{{.ExecTime}}</td></tr>
+            {{end}}
+        </table>
+    </div>
+
+    <div>
+        <h3>Результаты тестов (testresult)</h3>
+        <table>
+            <tr><th>ID</th><th>Студент</th><th>Тест</th><th>Балл</th><th>Время (сек)</th></tr>
+            {{range .TestResults}}
+            <tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.TestTitle}}</td><td><b>{{.Score}}</b></td><td>{{.Duration}}</td></tr>
+            {{end}}
+        </table>
+    </div>
+</div>
+
+<div class="grid">
+    <div>
+        <h3>Пользователи (users)</h3>
+        <table>
+            <tr><th>ID</th><th>Логин</th><th>Email</th><th>Роль</th></tr>
+            {{range .Users}}
+            <tr><td>{{.ID}}</td><td>{{.Login}}</td><td>{{.Email}}</td><td>{{.Role}}</td></tr>
+            {{end}}
+        </table>
+    </div>
+
+    <div>
+        <h3>Финансовые операции (transaction)</h3>
+        <table>
+            <tr><th>ID</th><th>Пользователь</th><th>Тип операции</th><th>Сумма</th><th>Дата</th></tr>
+            {{range .Transactions}}
+            <tr><td>{{.ID}}</td><td>{{.UserLogin}}</td><td>{{.TypeName}}</td><td>{{.Amount}} ₽</td><td>{{.CreatedAt}}</td></tr>
+            {{end}}
+        </table>
+    </div>
+</div>
+</body>
+</html>
